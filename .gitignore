@@ -1,0 +1,13 @@
+src/avr/obj
+*.obj
+*.elf
+*.lss
+*.map
+*.o
+*.hex
+*.eep
+*.cof
+*.sym
+*.s
+*.d
+*.out
