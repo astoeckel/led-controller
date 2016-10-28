@@ -1,0 +1,28 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP POT
+D Potentionmetre
+K R
+$ENDCMP
+#
+$CMP POT_MIRROR
+D Potentionmetre
+K R
+$ENDCMP
+#
+$CMP RR6
+D 8 resistors
+K R DEV
+$ENDCMP
+#
+$CMP R_PACK4
+D 4 resistors Pack
+K R DEV
+$ENDCMP
+#
+$CMP R_PACK4_PINS
+D 4 resistors Pack
+K R DEV
+$ENDCMP
+#
+#End Doc Library

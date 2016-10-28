@@ -11,3 +11,7 @@ src/avr/obj
 *.s
 *.d
 *.out
+*.bak
+*.bck
+*.rpt
+*.*-bak

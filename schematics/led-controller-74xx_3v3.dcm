@@ -1,0 +1,8 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP 74HCT04_3V3
+D Hex Inverseur
+K HCTMOS not inv
+$ENDCMP
+#
+#End Doc Library
