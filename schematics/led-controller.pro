@@ -1,4 +1,4 @@
-update=Fr 28 Okt 2016 21:33:34 CEST
+update=Sa 05 Nov 2016 21:31:42 CET
 version=1
 last_client=kicad
 [pcbnew]
@@ -61,3 +61,14 @@ LibName29=contrib
 LibName30=valves
 LibName31=led-controller-74xx_3v3
 LibName32=led-controller-resistor-networks
+LibName33=led-controller-7905
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=Pcbnew
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
