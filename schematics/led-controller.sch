@@ -32,6 +32,7 @@ LIBS:valves
 LIBS:led-controller-74xx_3v3
 LIBS:led-controller-resistor-networks
 LIBS:led-controller-7905
+LIBS:led-controller-lp2950-acz33
 LIBS:led-controller-cache
 EELAYER 25 0
 EELAYER END
@@ -263,19 +264,6 @@ Text GLabel 3850 5700 2    60   Output ~ 0
 SENSE3
 Text GLabel 3850 6800 2    60   Output ~ 0
 SENSE4
-$Comp
-L LF33CV U3
-U 1 1 581223D6
-P 3200 1000
-F 0 "U3" H 3350 804 50  0000 C CNN
-F 1 "LP 2950 ACZ3,3" H 3200 1200 50  0000 C CNN
-F 2 "TO_SOT_Packages_THT:TO-92_Inline_Narrow_Oval" H 3200 1000 50  0001 C CNN
-F 3 "" H 3200 1000 50  0000 C CNN
-F 4 "LP 2950 ACZ3,3" H 3200 1000 60  0001 C CNN "Order"
-F 5 "0.33" H 3200 1000 60  0001 C CNN "Price"
-	1    3200 1000
-	1    0    0    -1  
-$EndComp
 $Comp
 L GND #PWR012
 U 1 1 58122478
@@ -2075,4 +2063,15 @@ Wire Wire Line
 Wire Wire Line
 	10100 3600 10100 3800
 NoConn ~ 9700 3700
+$Comp
+L LP2950ACZ33 U3
+U 1 1 584D958C
+P 3200 1000
+F 0 "U3" H 3350 804 50  0000 C CNN
+F 1 "LP2950ACZ33" H 3200 1200 50  0000 C CNN
+F 2 "TO_SOT_Packages_THT:TO-92_Inline_Narrow_Oval" H 3200 1000 50  0001 C CNN
+F 3 "" H 3200 1000 50  0000 C CNN
+	1    3200 1000
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
