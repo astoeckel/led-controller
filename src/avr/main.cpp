@@ -1,113 +1,167 @@
+#include <stdint.h>
+
 #include <avr/interrupt.h>
 #include <avr/io.h>
-#include <stdint.h>
-#include <util/delay.h>
 
+#include "bus.hpp"
 #include "uart.hpp"
 
 /**
- * Implementation of the communication bus.
+ * Data used for oversampling from 8-bit PWM to 12-bit values
  */
-class Bus {
-private:
-	static constexpr uint16_t SYNC_WORD = 0xAFFE;
-	static constexpr uint8_t STATE_SYNC = 0;
-	static constexpr uint8_t STATE_TAR = 1;
-	static constexpr uint8_t STATE_CMD = 2;
-	static constexpr uint8_t STATE_PAYLOAD_H = 3;
-	static constexpr uint8_t STATE_PAYLOAD_L = 4;
-	static constexpr uint8_t STATE_DONE = 5;
+uint16_t pwm_oversample_data[16] = {
+    0b0000'0000'0000'0000, 0b1000'0000'0000'0000, 0b1000'0000'1000'0000,
+    0b1000'1000'1000'0000, 0b1000'1000'1000'1000, 0b1001'1000'1000'1000,
+    0b1001'1000'1001'1000, 0b1001'1000'1001'1001, 0b1001'1001'1001'1001,
+    0b1101'1001'1001'1001, 0b1101'1001'1101'1001, 0b1101'1101'1101'1001,
+    0b1101'1101'1101'1101, 0b1111'1101'1101'1101, 0b1111'1101'1111'1101,
+    0b1111'1111'1111'1101,
+};
 
-	struct Message {
-		uint8_t tar;
-		uint8_t cmd;
-		uint16_t payload;
-	};
+/**
+ * Structure holding the current state of each LED channel.
+ */
+struct led_channel {
+	volatile uint16_t cur_value;
+	uint16_t tar_value;
+	uint8_t ramp;
 
-	uint8_t m_state;
-	uint16_t m_sync;
-	Message m_msg;
+	/**
+	 * Returns true if the
+	 */
+	bool is_on(uint8_t phase = 0) const { return cur_value > 0; }
 
-public:
-	bool push_byte(uint8_t b)
+	/**
+	 * Sets the target value to the given value.
+	 */
+	void set_tar_value(uint16_t v)
 	{
-		switch (m_state) {
-		case STATE_SYNC:
-			m_sync = (m_sync << 8) | b;
-			if (m_sync == SYNC_WORD) {
-				m_state++;
-			}
-			break;
-		case STATE_TAR:
-			m_msg.tar = b;
-			m_state++;
-			break;
-		case STATE_CMD:
-			m_msg.cmd = b;
-			m_state++;
-			break;
-		case STATE_PAYLOAD_H:
-		case STATE_PAYLOAD_L:
-			m_msg.payload = (m_msg.payload << 8) | b;
-			m_state++;
-			break;
+		// Clamp the given value to 12 bit
+		if (v > 0xFFF) {
+			v = 0xFFF;
 		}
-		if (m_state == STATE_DONE) {
-			m_state = STATE_SYNC;
-			return true;
-		}
-		return false;
+
+		// Use the entire 16-bit range
+		tar_value = v << 4;
+		cur_value = v << 4;
+	}
+
+	/**
+	 * Sets the ramp to the given value.
+	 */
+	void set_ramp(uint16_t v) { ramp = v; }
+
+	/**
+	 * Moves the current value into the direction of the target value.
+	 */
+	void step()
+	{
+		/*		if (cur_value > tar_value) {
+		            if (cur_value - tar_value < ramp) {
+		                cur_value = tar_value;
+		            }
+		            else {
+		                cur_value -= ramp;
+		            }
+		        }
+		        else {
+		            if (tar_value - cur_value < ramp) {
+		                cur_value = tar_value;
+		            }
+		            else {
+		                cur_value += ramp;
+		            }
+		        }*/
+	}
+
+	uint8_t pulse_len_for_phase(uint8_t phase = 0) const
+	{
+		return (cur_value >> 8) +
+		       ((pwm_oversample_data[cur_value >> 4 & 0xF] >> phase) & 1);
 	}
 };
 
-int main()
+static led_channel channels[4];
+
+static volatile uint8_t phase = 0;
+
+ISR(TIMER0_OVF_vect)
 {
-	Uart uart;
-
-	DDRB = (1 << 7);
-	DDRD = (1 << 5);
-
-	sei();
-
-	while (true) {
-/*		char c;
-		if (uart.can_get(1) && uart.can_put(1)) {
-			if (uart.get(&c, 1) && uart.put(&c, 1) && c == '\r') {
-				c = '\n';
-			}
-			if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-				c ^= 0x20;
-			}
-			uart.put(&c, 1);
-			PORTD ^= (1 << 5);
-		}*/
-		if (uart.can_put(13)) {
-			uart.put("Hello World\n\r", 13);
+	auto toggle_bit = [](volatile uint8_t &v, uint8_t bit, bool value) {
+		if (value) {
+			v |= (1 << bit);
 		}
-		PORTB ^= (1 << 7);
+		else {
+			v &= ~(1 << bit);
+		}
+	};
+
+	// Update the current phase, update the current led channel brightness
+	// all 16 steps
+	phase = (phase + 1) & 0x0F;
+	if (phase == 0) {
+		for (uint8_t i = 0; i < 4; i++) {
+			channels[i].step();
+		}
 	}
 
-	/*	TCCR1A = 0;
-	    TCCR1B = (1 << CS00);
-	    DDRD = (1 << 5);
+	// Dis- or enable hardware PWM depending on the channel state
+	toggle_bit(TCCR0A, COM0A1, channels[0].is_on(phase));
+	toggle_bit(TCCR0A, COM0B1, channels[1].is_on(phase));
+	toggle_bit(TCCR1A, COM1B1, channels[2].is_on(phase));
+	toggle_bit(TCCR1A, COM1A1, channels[3].is_on(phase));
 
-	    uint8_t a = 0;
-	    uint8_t dir = 0;
-	    uint16_t l = 0;
-	    while (1) {
-	        a++;
-	        if (a == 4) {
-	            a = 0;
-	            if (l == 0 || l == 65535) {
-	                dir = ~dir;
-	            }
-	            if (dir) {
-	                l++;
-	            } else {
-	                l--;
-	            }
-	        }
+	// Update the PWM value
+	OCR0A = channels[0].pulse_len_for_phase(phase);
+	OCR0B = channels[1].pulse_len_for_phase(phase);
+	OCR1B = channels[2].pulse_len_for_phase(phase);
+	OCR1A = channels[3].pulse_len_for_phase(phase);
+}
 
-	        PORTD = (TCNT1 < l) ? (1 << 5) : 0;
-	    }*/
+int main()
+{
+	// Setup the output IO ports
+	PORTB = 0x00;
+	PORTD = 0x00;
+	DDRB = (1 << 2) | (1 << 1);
+	DDRD = (1 << 6) | (1 << 5);
+
+	// Setup PWM
+	OCR0A = 0;
+	OCR0B = 0;
+	OCR1A = 0;
+	OCR1B = 0;
+	TCCR0A = (1 << WGM00) | (1 << WGM01);
+	TCCR0B = (1 << CS01);
+	TCCR1A = (1 << WGM10);
+	TCCR1B = (1 << WGM12) | (1 << CS11);
+	TIMSK0 = (1 << TOIE0);
+
+	// Instantiate the UART
+	Uart uart;
+	BusClient bus;
+	sei();  // Enable interrupts for the message bus
+
+	// Process incomming messages
+	while (true) {
+		if (bus.process(uart)) {
+			const Message &msg = bus.msg();
+			switch (msg.cmd) {
+				case Message::CMD_VAL: {
+					const uint8_t channel = msg.payload >> 12;
+					if (channel < 4) {
+						channels[channel].set_tar_value(msg.payload & 0xFFF);
+					}
+					break;
+				}
+				case Message::CMD_RAMP: {
+					const uint8_t channel = msg.payload >> 12;
+					if (channel < 4) {
+						channels[channel].set_ramp(msg.payload & 0xFFF);
+					}
+					break;
+				}
+			}
+		}
+	}
 }
