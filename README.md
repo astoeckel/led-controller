@@ -10,7 +10,7 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (expe
 ## Specifications
 
 * 9x10cm PCB dimension
-* 7-25V DC input voltage
+* 7-25V DC input voltage (stabilised)
 * Four independently controllable channels with 4096 PWM steps
 * Max. 0.9A per channel, max. 3A total per board
 * Daisy-chainable UART
@@ -21,7 +21,7 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (expe
 
 This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for LEDs used in lighting applications. A commonly used constant current source circuit with high efficiency is the so called [buck converter](https://en.wikipedia.org/wiki/Buck_converter).
 
-Here, I designed a low-side switched buck converter from scratch without any specialized circuitry. Bare in mind that you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
+Here, I designed a low-side switched buck converter from scratch which does not rely on any specialized circuitry. Bare in mind that you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
 The entire circuit was first designed on a bread board. Should you *really* intend to use it, I'd strongly recommend to make yourself familiar with the circuit on a bread board first―though in that case you should go with a stripped down one-channel version.
 
@@ -64,16 +64,16 @@ However, a complication is that the comperator does not have infinite [common-mo
 
 ![Reference voltage generation and comperator](doc/reference_voltages.png)
 
-To solve this problem, I'm shifting both UTh and IRAW1 to voltages to VCC/2 using a voltage divider. The voltage devider for IRAW1-4 can be found in subfigure *(a)* of the above diagram. The reference voltage generation is depicted in subfigure *(b)*. Here, I'm using a -5V voltage regulator to generate a voltage of VCC - 5V. A 1K potentiometer with additional 4.7K resistor allows to generate a voltage in the range of about VCC to VCC - 0.8V (use a smaller value than 4.7K to allow smaller voltages and higher currents). This voltage is then divided by two using an additional (impedance matched) voltage divider stage.
+To solve this problem, I'm halving both UTh and IRAW1 using a voltage divider. The voltage divider for IRAW1-4 can be found in subfigure *(a)* of the above diagram. The reference voltage generation is depicted in subfigure *(b)*. Here, I'm using a -5V voltage regulator to generate a voltage of VCC - 5V. A 1k potentiometer with additional 4.7k resistor allows to generate a voltage in the range of about VCC to VCC - 0.8V (use a smaller value than 4.7k to allow smaller voltages and higher currents). This voltage is then divided by two using an additional (impedance matched) voltage divider stage.
 
-Using resistor voltage dividers is a really crude solution, since they are susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as ITh is larger than a few tens of millivolts (read: the driver cannot be used for standard LEDs with 20mA current).
+Using resistor voltage dividers is a crude solution. Their output voltage is highly susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as ITh is larger than a few tens of millivolts and VCC is constant (read: the driver cannot be used for standard LEDs with 20mA current, and you must use a stabilised DC power supply).
 
-Subfigure *(c)* shows how the reference voltage REF1 and and measured voltage ISENSE1 are fed into the LM339 comperator. The comperator operates in an open-collector fashion, which allows to generate a logic level output signal between 0 and 3.3V using a pullup resistor. This signal is fed into a standard 74HCT04 inverting [Schmitt-Trigger](https://en.wikipedia.org/wiki/Schmitt_trigger), which generates a clean 3.3V binary TTL signal. I'm using a 74HCT08 logic AND gate to combine the output of the Schmitt trigger with an auxiliary logic signal. This logic signal can be used to switch individual channels on and off and to dim LEDs using [PWM](https://en.wikipedia.org/wiki/Pulse-width_modulation).
+Subfigure *(c)* shows how the reference voltage REF1 and and measured voltage ISENSE1 are fed into the LM339 comperator. The comperator operates in an open-collector fashion, which allows to generate a logic level output signal between 0 and 3.3V using a pullup resistor. This signal is fed into a standard 74HCT04 inverting [Schmitt-Trigger](https://en.wikipedia.org/wiki/Schmitt_trigger), which generates a clean 3.3V binary TTL signal. I'm using a 74HCT08 AND gate to combine the output of the Schmitt trigger with an auxiliary logic signal. The auxiliary signal can be used to switch individual channels on and off and to dim LEDs using [PWM](https://en.wikipedia.org/wiki/Pulse-width_modulation).
 
 
 ### Dimming using pulse-width modulation (PWM)
 
-To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. Note that the AVR only provides high speed PWM with 256 possible steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness at low brightness values. E.g. the perceived brightness difference between levels "1" and "2" is rather extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
+To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. Note that the AVR only provides high speed hardware PWM with 256 possible steps. Since brightness perception in biological systems (e.g. humans) is logarithmic, 256 are far to few steps to smoothly change brightness at low brightness values. E.g. the perceived brightness difference between levels "1" and "2" is rather extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
 
             12-bit brightness value
             =======================
@@ -95,11 +95,11 @@ uint16_t pwm_oversample_data[16] = {
     0b1111'1111'1111'1101,
 };
 ````
-Each entry corresponds to one of the 16 lower 4-bit values, and each bit in the sequence corresponds to an additive offset. The higher the lower 4-bit value, the longer the PWM value will be increased by one. This mechanism works really well in practice! See `src/main.cpp` for more details.
+Each entry corresponds to one of the possible 16 lower 4-bit values, and each bit in the sequence corresponds to an additive offset. The higher the lower 4-bit value, the longer the PWM value will be increased by one. This mechanism works really well in practice! See `src/avr/main.cpp` for more details.
 
 ### Controlling and flashing the AVR
 
-The board contains a standard ISP connector for programming (I'm personally using a Raspberry Pi for programming AVR microcontrollers). Compile the software on Linux using the Makefile in the `src/avr` folder (requires an installed AVR `avr-gcc` toolchain). You can control the board with an UART connection using the `src/led_ctrl_host.cpp` program, for example using a cheap USB to UART cable. See `src/avr/bus.hpp` for a set of valid commands. Up to 254 boards can be daisy-chained by connecting the TX-pin of one board to the RX-pin of the sibling board.
+The board contains a standard ISP connector for programming (I'm personally using a Raspberry Pi for programming AVR microcontrollers). Compile the software on Linux using the Makefile in the `src/avr` folder (requires an installed AVR `avr-gcc` toolchain). You can control the board with an UART connection using the `src/led_ctrl_host.cpp` program, for example using a cheap USB to UART cable. See `src/avr/bus.hpp` for a set of valid commands. Theoretically, up to 254 boards can be daisy-chained by connecting the TX-pin of one board to the RX-pin of the sibling board.
 
 For example
 ```bash
@@ -114,6 +114,15 @@ will set the ramp speed of of the first channel (**0**FFF) of the first board (*
 ./led_ctrl_host 0 0xFF 0x0000
 ```
 will reset the first board in the daisy chain.
+
+## How to build and test
+
+Here is a short manual for building and testing the PCB. Be careful and use a current-limited bench power supply for testing.
+
+1. Build the power supply circuitry containing the 3.3V and -5V linear regulators, as well as all low-profile capacitors. Apply power and make sure the correct voltages can be measured on the board (probe the schematic in *KiCad* to find the corresponding places on the PCB).
+2. Add all the resistor arrays and the potentiometers. Make sure you can regulate the output voltage of the reference voltage generation stage in the interval between 0.5 * VCC and 0.5 * (VCC - 0.8V).
+3. Add all remaining components except for the AVR. Instead, short circuit the AVR output pins (the free AND gate input pins) to 3.3V. Connect a test load (e.g. a 20 Ohm 20 Watt resistor) to the output terminals in series with a multimeter measuring the current. Reduce the current to a small value. Replace the test load with your LEDs. Adjust the potentiometers until the desired current is reached (note that the output current gets smaller with increasing PCB temperature).
+4. Add and program the AVR (see above). Have fun.
 
 
 ## License
