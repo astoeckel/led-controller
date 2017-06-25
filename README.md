@@ -48,6 +48,8 @@ When the MOSFET is in its zero-conductance state, the magnetic field stored in t
 
 Note that the IRLU 120N MOSFET used here can be switched using logic-level volatges and does not require an additional driver circuit. You can safely build this circuit on a bread board with a (high-wattage) resistor as a load and by manually switching the MOSFET from a 3V3 voltage source (or just using a switch instead of a MOSFET). Using an oscilloscope you should be able to measure something close to the above voltage trace.
 
+**Implementation details:** The shunt resistors R6/R7 must be 0.6W low tolerance resistors. There should be a low-ESR 100uF electrolytic capacitor between VCC and GND close to the MOSFET to stabilise the power supply. Remember that current through the diode D2 will be the same as the current through your load, so use a fast-switching Schottky diode with corresponding current rating.
+
 ### Automating the switching process using a comperator
 
 To build a constant current source we need to automate the switching process. Given a threshold reference voltage UTh the basic idea is to just use a comperator integrated circuit such as a LM339. If the measured voltage between IRAW1 in the above schematic and ground is above UTh, we switch the transistor on. And as soon as IRAW1 falls below UTh, we swtich the transistor off. Sounds simple enough.
