@@ -1,30 +1,33 @@
 # LED Controller
-## 4 Channel Buck LED Controller
+## 4-channel buck high power LED constant current source
 
 ![Assembled PCBs (two stacked together)](doc/photo.jpg)
 
-This repository contains the schematics and gerber files for a four channel high power LED constant current source with integrated PWM dimmer. The circuit is entirely built from easily sourcable
-through-hole components, and the two-layer PCB can be cheaply manufactured (about 15$ for ten boards, excl. shipping, total cost of one board will be about 20$, with high precision trimmer potentiometers and the AVR microcontroller being the most expensive parts).
+This repository contains the schematics and Gerber files for a four channel high power LED constant current source with integrated 12-bit PWM dimmer. The circuit is entirely built from easily sourceable
+through-hole components, and the two-layer PCB can be cheaply manufactured (expect about $15 for ten boards, excl. shipping, total cost of one board will be about $20, with high precision trimmer potentiometers and the AVR microcontroller being the most expensive parts).
 
 
 ## Specifications
 
+* 9x10cm PCB dimension
 * 7-25V DC input voltage
-* Up to 0.9A per channel, up to 3A per board
-* Daisy-chainable UART for setting LED brightness in 4096 steps using an AVR µC
+* Four independently controllable channels with 4096 PWM steps
+* Max. 0.9A per channel, max. 3A total per board
+* Daisy-chainable UART
 * Automated ramping with configurable speed
+* Lots of connections simplifying integration into other projects: small expansion header, power supply headers, fuse holder, DC jacket, screwable connection terminals, ...
 
 ## About
 
-This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for high-power LEDs with several watts. A common technique for producing constant currents with high efficiency are so called [buck converters](https://en.wikipedia.org/wiki/Buck_converter).
+This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for LEDs used in lighting applications. A commonly used constant current source circuit with high efficiency is the so called [buck converter](https://en.wikipedia.org/wiki/Buck_converter).
 
 Here, I designed a low-side switched buck converter from scratch without any specialized circuitry. Bare in mind that you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
-The entire circuit was designed on a bread board, and should you really intend to use it I'd strongly recommend to make yourself familiar with the circuit on a bread board first―though in that case you should go with a stripped down one-channel version.
+The entire circuit was first designed on a bread board. Should you *really* intend to use it, I'd strongly recommend to make yourself familiar with the circuit on a bread board first―though in that case you should go with a stripped down one-channel version.
 
-Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen. Which is fairly bright.
+Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen. Which is fairly bright. The boards have been tested for several hundred hours.
 
-Schematic and board layout can be opened with [KICAD](http://kicad-pcb.org/). Important parts of the schematic are included below as images (missing below: the 3.3V power supply and lots of capacitors). Final Gerber files for board production can be found in the `gerber` folder.
+Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images below (missing below: the 3.3V power supply and lots of capacitors, as well as the AVR connectivity). Final Gerber files for board production can be found in the `gerber` folder.
 
 **Important:**
 This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with more than just a grain of salt. Use the information and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
@@ -38,8 +41,9 @@ In the following I'll go through parts of the circuit diagram of the converter a
 
 ### Buck converter constant current source
 
-The basic working principle of the buck converter is depicted in the below
-circuit diagram
+The basic working principle of the buck converter is depicted in the following
+circuit diagram:
+
 ![Buck converter principle](doc/buck_converter_principle.png)
 
 *Case (a):*
@@ -48,9 +52,9 @@ When the n-channel MOSFET is in its high-conductance state, a current flows thro
 *Case (b):*
 When the MOSFET is in its zero-conductance state, the magnetic field stored in the inductor tries to maintain the current flow. Once the measured current falls below the threshold current the MOSFET can be safely switched on again.
 
-Note that the IRLU 120N MOSFET used here can be switched using logic-level volatges and does not require an additional driver circuit. You can safely build this circuit on a bread board with a (high-wattage) resistor as a load and by manually switching the MOSFET from a 3V3 voltage source (or just using a switch instead of a MOSFET). Using an oscilloscope you should be able to measure something close to the above voltage trace.
+Note that the IRLU 120N MOSFET used here can be switched using logic-level volatges and does not require an additional driver circuit. You can safely build this circuit on a bread board with a (high-wattage) resistor as a load and by manually switching the MOSFET from a 3.3V voltage source (or just using a switch instead of a MOSFET). Using an oscilloscope you should be able to measure something close to the above voltage trace.
 
-**Implementation details:** The shunt resistors R6/R7 must be 0.6W low tolerance resistors. There should be a low-ESR 100uF electrolytic capacitor between VCC and GND close to the MOSFET to stabilise the power supply. Remember that current through the diode D2 will be the same as the current through your load, so use a fast-switching Schottky diode with corresponding current rating.
+**Implementation details:** The shunt resistors R6/R7 must be 0.6W low tolerance resistors. There should be a low-ESR 100µF (or higher) electrolytic capacitor between VCC and GND close to the MOSFET to stabilise the power supply. Remember that the current through diode D2 will be the same as the current through your load, so use a fast-switching Schottky diode with corresponding current rating.
 
 ### Automating the switching process using a comperator
 
@@ -64,20 +68,23 @@ To solve this problem, I'm shifting both UTh and IRAW1 to voltages to VCC/2 usin
 
 Using resistor voltage dividers is a really crude solution, since they are susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as ITh is larger than a few tens of millivolts (read: the driver cannot be used for standard LEDs with 20mA current).
 
-Subfigure (c) shows how the reference voltage REF1 and and measured voltage ISENSE1 are fed into the LM339 comperator. The comperator operates in an open-collector fashion, which allows to generate a logic level output signal between 0 and 3V3 using a pullup resistor. This signal is fed into a standard 74HCT04 inverting [Schmitt-Trigger](https://en.wikipedia.org/wiki/Schmitt_trigger), which generates a clean 3V3 binary TTL signal. I'm using a 74HCT08 logic AND gate to combine the output of the Schmitt trigger with an auxiliary logic signal. This logic signal can be used to switch individual channels on and off and to dim LEDs using [PWM](https://en.wikipedia.org/wiki/Pulse-width_modulation).
+Subfigure *(c)* shows how the reference voltage REF1 and and measured voltage ISENSE1 are fed into the LM339 comperator. The comperator operates in an open-collector fashion, which allows to generate a logic level output signal between 0 and 3.3V using a pullup resistor. This signal is fed into a standard 74HCT04 inverting [Schmitt-Trigger](https://en.wikipedia.org/wiki/Schmitt_trigger), which generates a clean 3.3V binary TTL signal. I'm using a 74HCT08 logic AND gate to combine the output of the Schmitt trigger with an auxiliary logic signal. This logic signal can be used to switch individual channels on and off and to dim LEDs using [PWM](https://en.wikipedia.org/wiki/Pulse-width_modulation).
 
 
 ### Dimming using pulse-width modulation (PWM)
 
-To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. Note that the AVR only provides high speed PWM with 256 possible steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness at low brightness values. E.g. the perceived brightness difference between the brightness levels "1" and "2" are rather extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
+To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. Note that the AVR only provides high speed PWM with 256 possible steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness at low brightness values. E.g. the perceived brightness difference between levels "1" and "2" is rather extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
 
-    12-bit brightness value
-    11 10  9  8  7  6  5  4  3  2  1  0
-     h  h  h  h  h  h  h  h  l  l  l  l
-    |----------------------|-----------|
-         PWM base value     Oversampling
+            12-bit brightness value
+            =======================
+    
+    msb                               lsb
+     11 10  9  8  7  6  5  4  3  2  1  0
+      h  h  h  h  h  h  h  h  l  l  l  l
+     |----------------------|-----------|
+          PWM base value     Oversampling
 
-Given the current phase of a 16-cycle period and the `l` values, an additive offset in {0, 1} is looked up from the following table:
+Given the current phase of a 16-cycle period and the `l` values, an additive offset in `{0, 1}` is looked up from the following table:
 ````c
 uint16_t pwm_oversample_data[16] = {
     0b0000'0000'0000'0000, 0b1000'0000'0000'0000, 0b1000'0000'1000'0000,
