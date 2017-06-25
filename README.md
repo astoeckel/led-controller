@@ -18,9 +18,9 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (abou
 
 This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for high-power LEDs with several watts. A common technique for producing constant currents with high efficiency are so called [buck converters](https://en.wikipedia.org/wiki/Buck_converter).
 
-Here, I designed a low-side switched buck converter from scratch without any specialized circuitry. I know, you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
+Here, I designed a low-side switched buck converter from scratch without any specialized circuitry. Bare in mind that you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
-The entire circuit was designed on a bread board, and I'd strongly recommend to make yourself familiar with the circuit on a bread board first, should you really intend to use it―though you should probably go with a stripped down one-channel version.
+The entire circuit was designed on a bread board, and should you really intend to use it I'd strongly recommend to make yourself familiar with the circuit on a bread board first―though in that case you should go with a stripped down one-channel version.
 
 Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen. Which is fairly bright.
 
