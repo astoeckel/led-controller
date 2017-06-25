@@ -16,7 +16,7 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (abou
 
 ## About
 
-This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for high-power LEDs with several watts. A common technique for producing constant currents with high efficiency are so called [https://en.wikipedia.org/wiki/Buck_converter](buck converters).
+This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for high-power LEDs with several watts. A common technique for producing constant currents with high efficiency are so called [buck converters](https://en.wikipedia.org/wiki/Buck_converter).
 
 Here, I designed a low-side switched buck converter from scratch without any specialized circuitry. I know, you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
