@@ -1,3 +1,21 @@
+/*
+ *  LED Constant Current Source -- AVR Controller
+ *  (c) Andreas Stöckel, 2016-2017
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <stdint.h>
 
 #include <avr/interrupt.h>
@@ -56,22 +74,22 @@ struct led_channel {
 	 */
 	void step()
 	{
-		/*		if (cur_value > tar_value) {
-		            if (cur_value - tar_value < ramp) {
-		                cur_value = tar_value;
-		            }
-		            else {
-		                cur_value -= ramp;
-		            }
-		        }
-		        else {
-		            if (tar_value - cur_value < ramp) {
-		                cur_value = tar_value;
-		            }
-		            else {
-		                cur_value += ramp;
-		            }
-		        }*/
+		if (cur_value > tar_value) {
+			if (cur_value - tar_value < ramp) {
+				cur_value = tar_value;
+			}
+			else {
+				cur_value -= ramp;
+			}
+		}
+		else {
+			if (tar_value - cur_value < ramp) {
+				cur_value = tar_value;
+			}
+			else {
+				cur_value += ramp;
+			}
+		}
 	}
 
 	uint8_t pulse_len_for_phase(uint8_t phase = 0) const
@@ -140,7 +158,7 @@ int main()
 	// Instantiate the UART
 	Uart uart;
 	BusClient bus;
-	sei();  // Enable interrupts for the message bus
+	sei();  // Enable interrupts for the message bus and the PWM timer
 
 	// Process incomming messages
 	while (true) {
