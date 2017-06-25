@@ -4,7 +4,7 @@
 ![Assembled PCBs (two stacked together)](doc/photo.jpg)
 
 This repository contains the schematics and gerber files for a four channel high power LED constant current source with integrated PWM dimmer. The circuit is entirely built from easily sourcable
-through-hole components, and the two-layer PCB can be cheaply manufactured (about 15$ for ten boards, excl. shipping).
+through-hole components, and the two-layer PCB can be cheaply manufactured (about 15$ for ten boards, excl. shipping, total cost of one board will be about 20$, with high precision trimmer potentiometers and the AVR microcontroller being the most expensive parts).
 
 
 ## Specifications
