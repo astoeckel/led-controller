@@ -3,8 +3,8 @@
 
 ![Assembled PCBs (two stacked together)](doc/photo.jpg)
 
-This repository contains the schematics and Gerber files for a four channel high power LED constant current source with integrated 12-bit PWM dimmer. The circuit is entirely built from easily sourceable
-through-hole components, and the two-layer PCB can be cheaply manufactured (expect about $15 for ten boards, excl. shipping, total cost of one board will be about $20, with high precision trimmer potentiometers and the AVR microcontroller being the most expensive parts).
+This repository contains the schematics and Gerber files for a four-channel high power LED constant current source with integrated 12-bit PWM dimmer. The circuit is built entirely from easily sourceable
+through-hole components, and the two-layer PCB can be cheaply manufactured (expect about $15 for ten boards, excl. shipping, total cost of one board will be about $20, with high precision trimmer potentiometers and the ATmega88 AVR microcontroller being the most expensive parts).
 
 
 ## Specifications
@@ -19,54 +19,54 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (expe
 
 ## About
 
-This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for LEDs used in lighting applications. A commonly used constant current source circuit with high efficiency is the so called [buck converter](https://en.wikipedia.org/wiki/Buck_converter).
+This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is infeasible for high-power LEDs used in lighting applications. A commonly used constant current source topology with high efficiency is the so called [buck converter](https://en.wikipedia.org/wiki/Buck_converter).
 
 Here, I designed a low-side switched buck converter from scratch which does not rely on any specialized circuitry. Bare in mind that you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
-The entire circuit was first designed on a bread board. Should you *really* intend to use it, I'd strongly recommend to make yourself familiar with the circuit on a bread board first―though in that case you should go with a stripped down one-channel version.
+The entire circuit was designed on a bread board first. Should you *really* intend to use it, I'd strongly recommend to make yourself familiar with the circuit by doing the same―though in that case you should go with a stripped down one-channel version.
 
-Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen. Which is fairly bright. The boards have been tested for several hundred hours.
+Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 Lumen. Which is fairly bright. The boards have been tested for several hundred hours.
 
 Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images below (missing below: the 3.3V power supply and lots of capacitors, as well as the AVR connectivity). Final Gerber files for board production can be found in the `gerber` folder.
 
 **Important:**
-This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with more than just a grain of salt. Use the information and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
+This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with more than just a grain of salt. Use the documentation and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
 
 
 ## How it works
 
 ![Annotated version of the populated PCB](doc/photo_annotated.png)
 
-In the following I'll go through parts of the circuit diagram of the converter and explain them.
+In the following I'll go through most parts of the circuit diagram and explain them.
 
 ### Buck converter constant current source
 
-The basic working principle of the buck converter is depicted in the following
-circuit diagram:
+The basic working principle of the buck converter is as depicted in the following
+sketch:
 
 ![Buck converter principle](doc/buck_converter_principle.png)
 
 *Case (a):*
-When the n-channel MOSFET is in its high-conductance state, a current flows through the load LED1. The inductor L1 limits the increase in current. The current is monitored over the 1 ohms shunt resistor pair R6/R7. Once the current reaches a certain threshold ITh, the MOSFET is switched off.
+When the n-channel MOSFET is in its high-conductance state, a current flows through the load LED1, while inductor L1 limits the current increase. The current is monitored over the 1 Ohm shunt resistor pair R6/R7. Once the current reaches a certain threshold *ITh*, the MOSFET is switched off.
 
 *Case (b):*
-When the MOSFET is in its zero-conductance state, the magnetic field stored in the inductor tries to maintain the current flow. Once the measured current falls below the threshold current the MOSFET can be safely switched on again.
+When the MOSFET is in its zero-conductance state, the magnetic field stored in the inductor tries to maintain the current flow. Once the measured current falls below the threshold current, the MOSFET can be safely switched on again.
 
-Note that the IRLU 120N MOSFET used here can be switched using logic-level volatges and does not require an additional driver circuit. You can safely build this circuit on a bread board with a (high-wattage) resistor as a load and by manually switching the MOSFET from a 3.3V voltage source (or just using a switch instead of a MOSFET). Using an oscilloscope you should be able to measure something close to the above voltage trace.
+Note that the IRLU 120N MOSFET used in the above schematic can be switched using logic-level voltages and does not require additional driver circuitry. You can safely build this circuit on a bread board with a (high-wattage) resistor as load and by manually switching the MOSFET from a 3.3V voltage source (or just using a switch instead of a MOSFET). Using an oscilloscope you should be able to measure something close to the above voltage trace sketches.
 
-**Implementation details:** The shunt resistors R6/R7 must be 0.6W low tolerance resistors. There should be a low-ESR 100µF (or higher) electrolytic capacitor between VCC and GND close to the MOSFET to stabilise the power supply. Remember that the current through diode D2 will be the same as the current through your load, so use a fast-switching Schottky diode with corresponding current rating.
+**Implementation details:** The shunt resistors R6/R7 must be 0.6W low tolerance resistors. There should be a low-ESR 100µF (or higher) electrolytic capacitor between VCC and GND close to the MOSFET to stabilise the power supply. Remember that the peak current through diode D2 will be the same as the current through your load, so use a fast-switching Schottky diode with corresponding current rating.
 
 ### Automating the switching process using a comperator
 
-To build a constant current source we need to automate the switching process. Given a threshold reference voltage UTh the basic idea is to just use a comperator integrated circuit such as a LM339. If the measured voltage between IRAW1 in the above schematic and ground is above UTh, we switch the transistor on. And as soon as IRAW1 falls below UTh, we swtich the transistor off. Sounds simple enough.
+To build a constant current source we need to automate the switching process. Given a threshold reference voltage *UTh* the basic idea is to just use a comperator integrated circuit such as a LM339. If the measured voltage between IRAW1 in the above schematic and ground is above *UTh*, we switch the transistor on. And as soon as IRAW1 falls below *UTh*, we swtich the transistor off. Sounds simple enough.
 
-However, a complication is that the comperator does not have infinite [common-mode rejection ratio](https://en.wikipedia.org/wiki/Common-mode_rejection_ratio). I guess this requires some explaination. Note that we are using an n-channel MOSFET as a low-side switch (in other words: the MOSFET switches the connection to ground). This makes controlling the MOSFET really simple, since we can just drive it from 3V logic circuitry, such as an AVR microcontroller. However, this requires to place the shunt resistor at the high side (close to VCC). Correspondingly, the reference voltage UTh and the sense voltage IRAW1 are both close to VCC (e.g. given a 1 Ohms resistor and a threshold current of 1A, UTh = VCC - 1V). Comperators (or more general, operational amplifiers) do not really work well in practice if both input voltages are both shifted by a high common DC gain, so we need some additional circuitry.
+A slight complication with respect to this approach is that the comperator does not have infinite [common-mode rejection ratio](https://en.wikipedia.org/wiki/Common-mode_rejection_ratio): we are using an n-channel MOSFET as a low-side switch (in other words: the MOSFET switches the connection to ground). On the one hand, this renders controlling the MOSFET really simple, since we can just drive it from 3.3V logic circuitry, such as an AVR microcontroller. On the other hand, low-side switching requires to place the shunt resistor at the high side (close to VCC). Correspondingly, the reference voltage UTh and the sense voltage IRAW1 are both close to VCC (e.g. given a 1 Ohm resistor and a threshold current of 1A, *UTh* = VCC - 1V). A finite common mode rejection ratio means that comperators (or more general, operational amplifiers) do not really work well in practice if both input voltages are shifted by a high common DC gain. We need some additional circuitry to shift the voltages towards the operating point of the comperator.
 
 ![Reference voltage generation and comperator](doc/reference_voltages.png)
 
-To solve this problem, I'm halving both UTh and IRAW1 using a voltage divider. The voltage divider for IRAW1-4 can be found in subfigure *(a)* of the above diagram. The reference voltage generation is depicted in subfigure *(b)*. Here, I'm using a -5V voltage regulator to generate a voltage of VCC - 5V. A 1k potentiometer with additional 4.7k resistor allows to generate a voltage in the range of about VCC to VCC - 0.8V (use a smaller value than 4.7k to allow smaller voltages and higher currents). This voltage is then divided by two using an additional (impedance matched) voltage divider stage.
+To solve this problem, I'm halving both UTh and IRAW1 using a voltage divider. The voltage divider for IRAW1-4 can be found in subfigure *(a)* of the above diagram. The reference voltage generation is depicted in subfigure *(b)*. Here, I'm using a -5V voltage regulator to generate a voltage of VCC - 5V. A 1k potentiometer with additional 4.7k resistor allows to generate a voltage in the range of about VCC to VCC - 0.8V (use a smaller value than 4.7k to increase the trimmer dynamic range and allow higher currents). This voltage is then divided by two using an additional (impedance matched) voltage divider stage.
 
-Using resistor voltage dividers is a crude solution. Their output voltage is highly susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as ITh is larger than a few tens of millivolts and VCC is constant (read: the driver cannot be used for standard LEDs with 20mA current, and you must use a stabilised DC power supply).
+Resistor voltage dividers are a crude solution. Their output voltage is highly susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as ITh is larger than a few tens of millivolts and VCC is constant (read: the driver cannot be used for standard LEDs with 20mA current, and you must use a stabilised DC power supply).
 
 Subfigure *(c)* shows how the reference voltage REF1 and and measured voltage ISENSE1 are fed into the LM339 comperator. The comperator operates in an open-collector fashion, which allows to generate a logic level output signal between 0 and 3.3V using a pullup resistor. This signal is fed into a standard 74HCT04 inverting [Schmitt-Trigger](https://en.wikipedia.org/wiki/Schmitt_trigger), which generates a clean 3.3V binary TTL signal. I'm using a 74HCT08 AND gate to combine the output of the Schmitt trigger with an auxiliary logic signal. The auxiliary signal can be used to switch individual channels on and off and to dim LEDs using [PWM](https://en.wikipedia.org/wiki/Pulse-width_modulation).
 
@@ -122,12 +122,12 @@ Here is a short manual for building and testing the PCB. Be careful and use a cu
 1. Build the power supply circuitry containing the 3.3V and -5V linear regulators, as well as all low-profile capacitors. Apply power and make sure the correct voltages can be measured on the board (probe the schematic in *KiCad* to find the corresponding places on the PCB).
 2. Add all the resistor arrays and the potentiometers. Make sure you can regulate the output voltage of the reference voltage generation stage in the interval between 0.5 * VCC and 0.5 * (VCC - 0.8V).
 3. Add all remaining components except for the AVR. Instead, short circuit the AVR output pins (the free AND gate input pins) to 3.3V. Connect a test load (e.g. a 20 Ohm 20 Watt resistor) to the output terminals in series with a multimeter measuring the current. Reduce the current to a small value. Replace the test load with your LEDs. Adjust the potentiometers until the desired current is reached (note that the output current gets smaller with increasing PCB temperature).
-4. Add and program the AVR (see above). Have fun.
+4. Add and program the ATmega88 (see above). Have fun.
 
 
 ## License
 
-Note that this project consists of both hardware and a (smaller portion) of software. Both parts are made available under different licenses.
+Note that this project consists of both hardware and to a smaller portion of software. Both parts are made available under different licenses.
 
 ### Hardware schematics
 
@@ -140,7 +140,7 @@ Note that this project consists of both hardware and a (smaller portion) of soft
     INCLUDING OF MERCHANTABILITY, SATISFACTORY QUALITY AND FITNESS FOR A
     PARTICULAR PURPOSE. Please see the CERN OHL v.1.2 for applicable conditions.
 
-### Software
+### Software (AVR firmware and host programs)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
