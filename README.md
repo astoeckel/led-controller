@@ -16,12 +16,15 @@ through-hole components, and the PCB can be cheaply manufactured.
 
 ## About
 
-This board is my first attempt at build a LED constant current source from
-scratch using a low-side switched [buck converter](https://en.wikipedia.org/wiki/Buck_converter). The entire circuit was designed on a bread board―though I recommend to go with a stripped down one-channel version when not using the PCB.
+This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is highly inefficient for high-power LEDs with several watts. A common technique for producing constant currents with high efficiency are so called [https://en.wikipedia.org/wiki/Buck_converter](buck converters).
 
-Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen.
+Here, I designed a low-side switched buck converter from scratch without any specialized circuitry. I know, you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
-Schematics are can be opened with KICAD. The important parts of the schematic are included below as images (missing: 3V3 power supply and lots of capacitors).
+The entire circuit was designed on a bread board, and I'd strongly recommend to make yourself familiar with the circuit on a bread board first, should you really intend to use it―though you should probably go with a stripped down one-channel version.
+
+Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen. Which is fairly bright.
+
+Schematic and board layout can be opened with [KICAD](http://kicad-pcb.org/). Important parts of the schematic are included below as images (missing: 3V3 power supply and lots of capacitors).
 
 **Important:**
 This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with a grain of salt. Use the information and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
@@ -62,7 +65,7 @@ Subfigure (c) shows how the reference voltage REF1 and and measured voltage ISEN
 
 ### Dimming using pulse-width modulation (PWM)
 
-To dim individual LED channels in 4096 steps I'm using an AVR microcontroller. The AVR only provides high speed PWM with 256 steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness are low brightness values. E.g. the perceived brightness difference between the brightness levels "1" and "2" are extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
+To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. The AVR only provides high speed PWM with 256 steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness are low brightness values. E.g. the perceived brightness difference between the brightness levels "1" and "2" are extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
 
     12-bit brightness value
     11 10  9  8  7  6  5  4  3  2  1  0
