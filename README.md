@@ -24,10 +24,10 @@ The entire circuit was designed on a bread board, and should you really intend t
 
 Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 lumen. Which is fairly bright.
 
-Schematic and board layout can be opened with [KICAD](http://kicad-pcb.org/). Important parts of the schematic are included below as images (missing: 3V3 power supply and lots of capacitors).
+Schematic and board layout can be opened with [KICAD](http://kicad-pcb.org/). Important parts of the schematic are included below as images (missing below: the 3.3V power supply and lots of capacitors). Final Gerber files for board production can be found in the `gerber` folder.
 
 **Important:**
-This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with a grain of salt. Use the information and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
+This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with more than just a grain of salt. Use the information and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
 
 
 ## How it works
@@ -69,7 +69,7 @@ Subfigure (c) shows how the reference voltage REF1 and and measured voltage ISEN
 
 ### Dimming using pulse-width modulation (PWM)
 
-To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. The AVR only provides high speed PWM with 256 steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness are low brightness values. E.g. the perceived brightness difference between the brightness levels "1" and "2" are extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
+To dim individual LED channels in 4096 steps I'm using an AVR microcontroller clocked at 8 MHz. Note that the AVR only provides high speed PWM with 256 possible steps. Since brightness perception in biological systems is logarithmic, 256 are far to few steps to smoothly change brightness at low brightness values. E.g. the perceived brightness difference between the brightness levels "1" and "2" are rather extreme compared to the brightness difference between "254" and "255". To introduce more intermediate steps I'm using a technique called oversampling: the PWM is operated at a frequency 16 times higher than required for flicker-free operation, and the PWM value is slightly varied within each 16-cycle period. This variation depends on the lower 4-bit of the brightness value (marked with `l` in the following diagram).
 
     12-bit brightness value
     11 10  9  8  7  6  5  4  3  2  1  0
@@ -78,7 +78,6 @@ To dim individual LED channels in 4096 steps I'm using an AVR microcontroller cl
          PWM base value     Oversampling
 
 Given the current phase of a 16-cycle period and the `l` values, an additive offset in {0, 1} is looked up from the following table:
-
 ````c
 uint16_t pwm_oversample_data[16] = {
     0b0000'0000'0000'0000, 0b1000'0000'0000'0000, 0b1000'0000'1000'0000,
@@ -89,22 +88,21 @@ uint16_t pwm_oversample_data[16] = {
     0b1111'1111'1111'1101,
 };
 ````
-
-See `src/main.cpp` for more details.
+Each entry corresponds to one of the 16 lower 4-bit values, and each bit in the sequence corresponds to an additive offset. The higher the lower 4-bit value, the longer the PWM value will be increased by one. This mechanism works really well in practice! See `src/main.cpp` for more details.
 
 ### Controlling and flashing the AVR
 
-The board contains a standard ISP connector. Compile the software on Linux using the Makefile in the `src/avr` folder (requires an installed AVR `avr-gcc` toolchain). You can control the board with an UART connection using the `src/led_ctrl_host.cpp` program. See `src/avr/bus.hpp` for a set of valid commands. Up to 254 boards can be daisy-chained by connecting the TX-pin of one board to the RX-pin of the sibling board.
+The board contains a standard ISP connector for programming (I'm personally using a Raspberry Pi for programming AVR microcontrollers). Compile the software on Linux using the Makefile in the `src/avr` folder (requires an installed AVR `avr-gcc` toolchain). You can control the board with an UART connection using the `src/led_ctrl_host.cpp` program, for example using a cheap USB to UART cable. See `src/avr/bus.hpp` for a set of valid commands. Up to 254 boards can be daisy-chained by connecting the TX-pin of one board to the RX-pin of the sibling board.
 
 For example
 ```bash
 ./led_ctrl_host 0 2 0x3FFF
 ```
-will set the brightness of the fourth channel (*3*FFF) of the first board (*0*) in the daisy chain,
+will set the brightness of the fourth channel (**3**FFF) of the first board (**0**) in the daisy chain to "FFF" (the maximum value),
 ```bash
 ./led_ctrl_host 0 1 0x0001
 ```
-will set the ramp speed of of the first channel (*0*FFF) of the first board (*0*) in the daisy chain, and
+will set the ramp speed of of the first channel (**0**FFF) of the first board (**0**) in the daisy chain to the slowest possible value "1" (a value of "0" is off), and
 ```bash
 ./led_ctrl_host 0 0xFF 0x0000
 ```
