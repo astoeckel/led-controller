@@ -32,6 +32,8 @@ This is the first PCB I ever built and I am by no means an electrical engineer! 
 
 ## How it works
 
+![Annotated version of the populated PCB](doc/photo_annotated.png)
+
 In the following I'll go through parts of the circuit diagram of the converter and explain them.
 
 ### Buck converter constant current source
