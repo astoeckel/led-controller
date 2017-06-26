@@ -1,5 +1,5 @@
 # LED Controller
-## 4-channel buck high power LED constant current source
+## 4-channel high power LED buck converter constant current source
 
 ![Assembled PCBs (two stacked together)](doc/photo.jpg)
 
@@ -27,10 +27,10 @@ The entire circuit was designed on a bread board first. Should you *really* inte
 
 Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 Lumen. Which is fairly bright. The boards have been tested for several hundred hours.
 
-Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images below (missing below: the 3.3V power supply and lots of capacitors, as well as the AVR connectivity). Final Gerber files for board production can be found in the `gerber` folder.
+Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images in the next section (missing: the 3.3V power supply and lots of capacitors, as well as the AVR connectivity). Final Gerber files for board production can be found in the `gerber` folder.
 
 **Important:**
-This is the first PCB I ever built and I am by no means an electrical engineer! So all the information provided here should be taken with more than just a grain of salt. Use the documentation and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
+This is the first PCB I ever built and I am by no means an electrical engineer! This is just a hobby project. So all the information provided here should be taken with more than just a grain of salt. Use the documentation and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
 
 
 ## How it works
@@ -60,13 +60,13 @@ Note that the IRLU 120N MOSFET used in the above schematic can be switched using
 
 To build a constant current source we need to automate the switching process. Given a threshold reference voltage *UTh* the basic idea is to just use a comperator integrated circuit such as a LM339. If the measured voltage between IRAW1 in the above schematic and ground is above *UTh*, we switch the transistor on. And as soon as IRAW1 falls below *UTh*, we swtich the transistor off. Sounds simple enough.
 
-A slight complication with respect to this approach is that the comperator does not have infinite [common-mode rejection ratio](https://en.wikipedia.org/wiki/Common-mode_rejection_ratio): we are using an n-channel MOSFET as a low-side switch (in other words: the MOSFET switches the connection to ground). On the one hand, this renders controlling the MOSFET really simple, since we can just drive it from 3.3V logic circuitry, such as an AVR microcontroller. On the other hand, low-side switching requires to place the shunt resistor at the high side (close to VCC). Correspondingly, the reference voltage UTh and the sense voltage IRAW1 are both close to VCC (e.g. given a 1 Ohm resistor and a threshold current of 1A, *UTh* = VCC - 1V). A finite common mode rejection ratio means that comperators (or more general, operational amplifiers) do not really work well in practice if both input voltages are shifted by a high common DC gain. We need some additional circuitry to shift the voltages towards the operating point of the comperator.
+A slight complication with respect to this approach is that the comperator does not have infinite [common-mode rejection ratio](https://en.wikipedia.org/wiki/Common-mode_rejection_ratio): we are using an n-channel MOSFET as a low-side switch (in other words: the MOSFET switches the connection to ground). On the one hand, this renders controlling the MOSFET really simple, since we can just drive it from 3.3V logic circuitry, such as an AVR microcontroller. On the other hand, low-side switching requires to place the shunt resistor at the high side (close to VCC). Correspondingly, the reference voltage UTh and the sense voltage IRAW1 are both close to VCC (e.g. given a 1 Ohm resistor and a threshold current of 1A, *UTh* = VCC - 1V). A finite common mode rejection ratio means that comperators (or more general, operational amplifiers) do not work well in practice if both input voltages are shifted by a high common DC bias. We need some additional circuitry to shift the voltages towards the operating point of the comperator.
 
 ![Reference voltage generation and comperator](doc/reference_voltages.png)
 
 To solve this problem, I'm halving both UTh and IRAW1 using a voltage divider. The voltage divider for IRAW1-4 can be found in subfigure *(a)* of the above diagram. The reference voltage generation is depicted in subfigure *(b)*. Here, I'm using a -5V voltage regulator to generate a voltage of VCC - 5V. A 1k potentiometer with additional 4.7k resistor allows to generate a voltage in the range of about VCC to VCC - 0.8V (use a smaller value than 4.7k to increase the trimmer dynamic range and allow higher currents). This voltage is then divided by two using an additional (impedance matched) voltage divider stage.
 
-Resistor voltage dividers are a crude solution. Their output voltage is highly susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as ITh is larger than a few tens of millivolts and VCC is constant (read: the driver cannot be used for standard LEDs with 20mA current, and you must use a stabilised DC power supply).
+Resistor voltage dividers are a crude solution. Their output voltage is highly susceptible to temperature variation and the actual current that is being drawn from the divider. Furthermore, dividing the voltage by two reduces the voltage difference between on- and off-state to a few hundred millivolts. Surprisingly, the solution works quite well in practice, as long as *ITh* is larger than a few tens of millivolts and VCC is constant (read: the driver cannot be used for standard LEDs with 20mA current, and you must use a stabilised DC power supply).
 
 Subfigure *(c)* shows how the reference voltage REF1 and and measured voltage ISENSE1 are fed into the LM339 comperator. The comperator operates in an open-collector fashion, which allows to generate a logic level output signal between 0 and 3.3V using a pullup resistor. This signal is fed into a standard 74HCT04 inverting [Schmitt-Trigger](https://en.wikipedia.org/wiki/Schmitt_trigger), which generates a clean 3.3V binary TTL signal. I'm using a 74HCT08 AND gate to combine the output of the Schmitt trigger with an auxiliary logic signal. The auxiliary signal can be used to switch individual channels on and off and to dim LEDs using [PWM](https://en.wikipedia.org/wiki/Pulse-width_modulation).
 
@@ -121,7 +121,7 @@ Here is a short manual for building and testing the PCB. Be careful and use a cu
 
 1. Build the power supply circuitry containing the 3.3V and -5V linear regulators, as well as all low-profile capacitors. Apply power and make sure the correct voltages can be measured on the board (probe the schematic in *KiCad* to find the corresponding places on the PCB).
 2. Add all the resistor arrays and the potentiometers. Make sure you can regulate the output voltage of the reference voltage generation stage in the interval between 0.5 * VCC and 0.5 * (VCC - 0.8V).
-3. Add all remaining components except for the AVR. Instead, short circuit the AVR output pins (the free AND gate input pins) to 3.3V. Connect a test load (e.g. a 20 Ohm 20 Watt resistor) to the output terminals in series with a multimeter measuring the current. Reduce the current to a small value. Replace the test load with your LEDs. Adjust the potentiometers until the desired current is reached (note that the output current gets smaller with increasing PCB temperature).
+3. Add all remaining components except for the AVR. Instead, short circuit the AVR output pins (the free AND gate input pins) to 3.3V. Connect a test load (e.g. a 20 Ohm 20 Watt resistor) to the output terminals in series with a multimeter measuring the current. Reduce the current to a small value by adjusting the potentiometers. Replace the test load with your LEDs. Adjust the potentiometers until the desired current is reached (note that the output current gets smaller with increasing PCB temperature).
 4. Add and program the ATmega88 (see above). Have fun.
 
 
