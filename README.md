@@ -15,7 +15,7 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (expe
 * Max. 0.9A per channel, max. 3A total per board
 * Daisy-chainable UART
 * Automated ramping with configurable speed
-* Lots of connections simplifying integration into other projects: small expansion header, power supply headers, fuse holder, DC jacket, screwable connection terminals, ...
+* Lots of connections simplifying integration into other projects: small expansion header, power supply headers, fuse holder, DC jack, screwable connection terminals, ...
 
 ## About
 
