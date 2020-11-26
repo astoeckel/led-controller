@@ -19,17 +19,17 @@ through-hole components, and the two-layer PCB can be cheaply manufactured (expe
 
 ## About
 
-This board is my first attempt at building a driver for high-power LEDs. LEDs in general must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this approach is infeasible for high-power LEDs used in lighting applications. A commonly used constant current source topology with high efficiency is the so called [buck converter](https://en.wikipedia.org/wiki/Buck_converter).
+This board is my first attempt at building a driver for high-power LEDs. LEDs must be driven with a constant current. A simple in-series resistor is often used for low-power LEDs, yet this is not really feasible for the high-power LEDs used in lighting applications due to temperature dependent voltage-current curves. A commonly used constant current source topology with high efficiency is the so called [buck converter](https://en.wikipedia.org/wiki/Buck_converter).
 
-Here, I designed a low-side switched buck converter from scratch which does not rely on any specialized circuitry. Bare in mind that you probably shouldn't do this, since integrated solutions exist which are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
+The low-side switched buck converter in this repository was designed from scratch. It does not rely on any specialized circuitry. Bare in mind that you probably shouldn't do this–integrated solutions exist that are much cheaper, smaller, and safer to use. However, they lack most of the learning experience.
 
-The entire circuit was designed on a bread board first. Should you *really* intend to use it, I'd strongly recommend to make yourself familiar with the circuit by doing the same―though in that case you should go with a stripped down one-channel version.
+The entire circuit was designed on a bread board first. Should you *really* intend to use it, I'd strongly recommend you make yourself familiar with the circuit by doing the same―though in that case you should go with a stripped down one-channel version.
 
 Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 Lumen. Which is fairly bright. The boards have been tested for several hundred hours.
 
-Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images in the next section (missing: the 3.3V power supply and lots of capacitors, as well as the AVR connectivity). Final Gerber files for board production can be found in the `gerber` folder.
+Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images in the next section (missing: the 3.3V power supply and lots of capacitors, as well as the AVR used for PWM). Final Gerber files for board production can be found in the `gerber` folder.
 
-**Important:**
+**⚠ Important:**
 This is the first PCB I ever built and I am by no means an electrical engineer! This is just a hobby project. So all the information provided here should be taken with more than just a grain of salt. Use the documentation and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
 
 
@@ -47,10 +47,10 @@ sketch:
 ![Buck converter principle](doc/buck_converter_principle.png)
 
 *Case (a):*
-When the n-channel MOSFET is in its high-conductance state, a current flows through the load LED1, while inductor L1 limits the current increase. The current is monitored over the 1 Ohm shunt resistor pair R6/R7. Once the current reaches a certain threshold *ITh*, the MOSFET is switched off.
+When the n-channel MOSFET is conducting, a current flows through the load LED1; the current increases slowly over time due to the inductor L1. The current is monitored over the 1 Ohm shunt resistor pair R6/R7. Once the current reaches a certain threshold *ITh*, the MOSFET is switched off.
 
 *Case (b):*
-When the MOSFET is in its zero-conductance state, the magnetic field stored in the inductor tries to maintain the current flow. Once the measured current falls below the threshold current, the MOSFET can be safely switched on again.
+When the MOSFET is switched off, the magnetic field stored in the inductor maintains the current flow for a while. Once the measured current falls below the threshold current, the MOSFET can be safely switched on again.
 
 Note that the IRLU 120N MOSFET used in the above schematic can be switched using logic-level voltages and does not require additional driver circuitry. You can safely build this circuit on a bread board with a (high-wattage) resistor as load and by manually switching the MOSFET from a 3.3V voltage source (or just using a switch instead of a MOSFET). Using an oscilloscope you should be able to measure something close to the above voltage trace sketches.
 
@@ -60,7 +60,7 @@ Note that the IRLU 120N MOSFET used in the above schematic can be switched using
 
 To build a constant current source we need to automate the switching process. Given a threshold reference voltage *UTh* the basic idea is to just use a comperator integrated circuit such as a LM339. If the measured voltage between IRAW1 in the above schematic and ground is above *UTh*, we switch the transistor on. And as soon as IRAW1 falls below *UTh*, we swtich the transistor off. Sounds simple enough.
 
-A slight complication with respect to this approach is that the comperator does not have infinite [common-mode rejection ratio](https://en.wikipedia.org/wiki/Common-mode_rejection_ratio): we are using an n-channel MOSFET as a low-side switch (in other words: the MOSFET switches the connection to ground). On the one hand, this renders controlling the MOSFET really simple, since we can just drive it from 3.3V logic circuitry, such as an AVR microcontroller. On the other hand, low-side switching requires to place the shunt resistor at the high side (close to VCC). Correspondingly, the reference voltage UTh and the sense voltage IRAW1 are both close to VCC (e.g. given a 1 Ohm resistor and a threshold current of 1A, *UTh* = VCC - 1V). A finite common mode rejection ratio means that comperators (or more general, operational amplifiers) do not work well in practice if both input voltages are shifted by a high common DC bias. We need some additional circuitry to shift the voltages towards the operating point of the comperator.
+A slight complication with this approach is that the comperator does not have infinite [common-mode rejection ratio](https://en.wikipedia.org/wiki/Common-mode_rejection_ratio). Let me unpack this. We are using an n-channel MOSFET as a low-side switch (in other words: the MOSFET switches the connection to ground). On the one hand, this makes controlling the MOSFET really easy, since we can just drive it from 3.3V logic circuitry, such as an AVR microcontroller. On the other hand, low-side switching requires to place the shunt resistor at the high side (close to VCC). Correspondingly, the reference voltage UTh and the sense voltage IRAW1 are both close to VCC (e.g. given a 1 Ohm resistor and a threshold current of 1A, *UTh* = VCC - 1V). A finite common mode rejection ratio means that comperators (or more general, operational amplifiers) do not work well in practice if both input voltages are shifted by a high common DC bias. We need some additional circuitry to shift the voltages towards the operating point of the comperator.
 
 ![Reference voltage generation and comperator](doc/reference_voltages.png)
 
