@@ -27,7 +27,7 @@ The entire circuit was designed on a bread board first. Should you *really* inte
 
 Two of the PCBs are now at the heart of a wake-up light alarm-clock thingy with 36 high power LEDs (4 red, 4 green, 4 blue, 4 yellow, 20 white) in eight channels at 21.5V/300mA each and a total nominal light output of 3600 Lumen. Which is fairly bright. The boards have been tested for several hundred hours.
 
-Schematic and board layout can be opened with [KiCad](http://kicad-pcb.org/). Important parts of the schematic are included as images in the next section (missing: the 3.3V power supply and lots of capacitors, as well as the AVR used for PWM). Final Gerber files for board production can be found in the `gerber` folder.
+Schematic and board layout can be opened with [KiCad](http://kicad.org/). Important parts of the schematic are included as images in the next section (missing: the 3.3V power supply and lots of capacitors, as well as the AVR used for PWM). Final Gerber files for board production can be found in the `gerber` folder.
 
 **⚠ Important:**
 This is the first PCB I ever built and I am by no means an electrical engineer! This is just a hobby project. So all the information provided here should be taken with more than just a grain of salt. Use the documentation and schematics provided _at your own risk_. This circuit operates at fairly high currents and frequencies in the 100 kHz range. You are responsible for all shielding required to prevent any interference in the RF spectrum!
